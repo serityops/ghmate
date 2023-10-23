@@ -115,4 +115,3 @@ Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTIN
 ## License
 
 `ghmate` is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-

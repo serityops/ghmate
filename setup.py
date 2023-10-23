@@ -21,3 +21,4 @@ setup(
     classifiers=config.get('metadata', 'classifiers').split('\n'),
     python_requires='>=3.8'
 )
+

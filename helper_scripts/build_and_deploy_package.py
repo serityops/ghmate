@@ -33,7 +33,8 @@ class Deployer:
         self.log_data["logs"].append(log_entry)
 
     def execute_and_log(self, command, sensitive_info):
-        print(f"Executing: {' '.join(command)}")
+        masked_command = [self.mask_sensitive_info(part, sensitive_info) for part in command]
+        print(f"Executing: {' '.join(masked_command)}")
         result = self.execute_command(command)
         self.log_command(command, result, sensitive_info)
         return result.returncode
@@ -42,7 +43,7 @@ class Deployer:
         with open(self.log_file_path, "w") as log_file:
             log_file.write(json.dumps(self.log_data, indent=4))
 
-    def install_dependencies(self, token):
+    def install_dependencies(self, token: str):
         dependencies = ["python-dotenv", "wheel", "build", "twine"]
         for dep in dependencies:
             return_code = self.execute_and_log(["pip", "install", dep], token)
@@ -51,14 +52,14 @@ class Deployer:
                 print(f"Failed to install {dep}. Check the log file for details.")
                 exit(return_code)
 
-    def build_project(self, token):
+    def build_project(self, token: str):
         return_code = self.execute_and_log(["python", "-m", "build", "--outdir", "package"], token)
         if return_code != 0:
             self.write_log_to_file()
             print("Failed to build the project. Check the log file for details.")
             exit(return_code)
 
-    def upload_to_testpypi(self, token):
+    def upload_to_testpypi(self, token: str):
         return_code = self.execute_and_log([
             "twine", "upload",
             "--repository-url", "https://test.pypi.org/legacy/",
@@ -73,7 +74,7 @@ class Deployer:
             exit(return_code)
         print("Package uploaded successfully to TestPyPI.")
 
-    def deploy(self, token):
+    def deploy(self, token: str):
         self.install_dependencies(token)
         self.build_project(token)
         self.upload_to_testpypi(token)

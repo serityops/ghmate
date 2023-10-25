@@ -107,7 +107,6 @@ example_project/
 │   └── test_core.py     # Test script for CoreCommands
 └── requirements.txt     # Required packages
 ```
-
 ## Contributing
 
 Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) to get started.

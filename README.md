@@ -1,35 +1,30 @@
 # ghmate
 
-`ghmate` is a Python package for interacting with the GitHub API, providing a convenient way to access various GitHub features programmatically.
-
-## Installation
+A comprehensive Python package for interacting with the GitHub API. This package simplifies GitHub API calls by providing a set of high-level commands encapsulated in easy-to-use classes.
 
 ### Prerequisites
 
-- Python 3.8 or higher
+### Prerequisites
+
+- Python 3.8 or higher (specify other supported versions if applicable)
 - `pip` for installing packages
-- A GitHub account and [Personal Access Token](https://github.com/settings/tokens) for authentication
+- A GitHub account and [Personal Access Token](https://github.com/settings/tokens) (required for making authenticated API requests)
 
-### Install ghmate
+## Installation
 
-Clone the repository and install the package using `pip`.
-
+To install `ghmate`, ensure you have Python 3.8 or higher and pip installed. Run the following command:
 ```bash
-git clone https://github.com/yourusername/ghmate.git
-cd ghmate
-pip install .
+pip install ghmate
 ```
 
-Or install directly from GitHub.
+## Setup
 
+Before using `ghmate`, set up your environment with your GitHub personal access token:
 ```bash
-pip install git+https://github.com/yourusername/ghmate.git
+export GITHUB_TOKEN='your_personal_access_token'
 ```
 
-## Usage
-
-### Environment Variables
-
+(Optional) Use a .env file with python-dotenv to load environment variables.
 Create a `.env` file in your project directory and add your GitHub Personal Access Token, repository owner, and repository name.
 
 ```plaintext
@@ -53,58 +48,113 @@ owner = os.getenv('OWNER')
 repo = os.getenv('REPO')
 ```
 
-### GitHub Client
+## Usage
+Initialize the GitHubClient with your repository owner, name, and token. 
+Replace owner_name, repository_name, and your_token with your actual GitHub information.
 
-Create an instance of the GitHub client.
+
+To start using `ghmate`, initialize the `GitHubClient`:
 
 ```python
 from ghmate.github_client import GitHubClient
 
-github_client = GitHubClient(token, owner, repo)
+github_client = GitHubClient(
+    owner="owner_name",
+    repo="repository_name",
+    token="your_token"
+)
 ```
-
-### Actions Commands
-
-Use the `ActionsCommands` class to interact with GitHub Actions.
-
-```python
-from ghmate.actions_commands import ActionsCommands
-
-actions = ActionsCommands(github_client, token, owner, repo)
-print(actions.cache('list'))  # Example method call
-```
+Use CoreCommands for basic operations and ActionsCommands for GitHub Actions-related tasks. 
+Here are some examples:
 
 ### Core Commands
-
-Use the `CoreCommands` class for various core features.
+`CoreCommands` provides essential GitHub operations:
 
 ```python
 from ghmate.core_commands import CoreCommands
 
-core = CoreCommands(token, owner, repo)
-print(core.auth())  # Example method call
+core_commands = CoreCommands(
+    token="your_token",
+    owner="owner_name",
+    repo="repository_name"
+)
+
+# Authenticate and get user information
+user_info = core_commands.auth()
+
+# Browse topics
+topics = core_commands.browse()
+
+# Create an issue
+issue = core_commands.issue(action='create', title='Issue Title', body='Issue description')
+
 ```
 
+### Actions Commands
+`ActionsCommands` focuses on GitHub Actions-related tasks:
+
+```python
+from ghmate.actions_commands import ActionsCommands
+
+actions_commands = ActionsCommands(owner="owner_name", repo="repository_name", token="your_token")
+
+# List artifacts
+artifacts = actions_commands.list_artifacts()
+
+# Cache management
+cache_list = actions_commands.cache(action='list')
+cache_restore = actions_commands.cache(action='restore', key='cache_key')
+
+```
+
+Handle exceptions that may occur during API calls.
+
 ## Tests
+
+### Unit Test
 
 Run tests to ensure the package is working as expected.
 
 ```bash
-python -m unittest discover
+python -m unittest discover -s tests/unit
+# OR
+python3 -m unittest discover -s tests/unit
+
+```
+Mock external API calls when writing unit tests. 
+Integration tests will make actual API calls, so ensure you have the correct setup.
+When writing unit tests, use the `unittest.mock` module to mock external API calls. 
+
+For example:
+
+```python
+from unittest import TestCase
+from unittest.mock import patch
+from ghmate.actions_commands import ActionsCommands
+
+class TestActionsCommandsUnit(TestCase):
+    @patch.object(ActionsCommands, '_make_request')
+    def test_list_artifacts(self, mock_request):
+        # Your test code here
+        pass
+
+```
+
+### Integration Tests
+For integration tests, ensure your .env file contains the necessary environment variables and run:
+
+```bash
+python -m unittest discover -s tests/integration
 ```
 
 ## Examples
-
-See the `example_project` directory for a sample project setup, usage examples, and tests.
+Examples
+The `examples` directory contains a sample project setup and usage examples.
 
 ```plaintext
-example_project/
+example/
 ├── .env                 # Storing environment variables
-├── example_usage.py     # Example script utilizing the ghmate package
-├── tests/               # Directory containing test scripts
-│   ├── __init__.py
-│   ├── test_actions.py  # Test script for ActionsCommands
-│   └── test_core.py     # Test script for CoreCommands
+├── using_dotenv.py     # Example script utilizing the ghmate package
 └── requirements.txt     # Required packages
 ```
 ## Contributing

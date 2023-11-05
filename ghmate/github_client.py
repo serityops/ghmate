@@ -49,5 +49,5 @@ class GitHubClient:
             response = requests.request(method, url, headers=self.headers, json=payload)
             return response
         except requests.exceptions.RequestException as error:
-            logging.error(f"Request to {url} failed: {error}")
+            logging.error(f"Request failed: {error}")
             raise Exception(f"Request failed: {str(error)}")

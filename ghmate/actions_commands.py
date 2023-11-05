@@ -1,5 +1,5 @@
-import json
 from typing import Optional, Any
+
 from ghmate.github_client import GitHubClient
 
 
@@ -10,15 +10,18 @@ class ActionsCommands(GitHubClient):
     Inherits from GitHubClient for shared attributes and methods.
     """
 
-    def __init__(self, token: str, owner: str, repo: str):
-        super().__init__(token, owner, repo)
+    LIST_ACTION = "list"
+    RESTORE_ACTION = "restore"
+
+    def __init__(self, owner: str, repo: str, token: Optional[str] = None):
+        super().__init__(owner=owner, repo=repo, token=token)
 
     def cache(self, action: str, *args: Optional[Any]) -> Any:
-        if action == "list":
+        if action == ActionsCommands.LIST_ACTION:
             endpoint = "actions/cache"
             return self._make_request(method="GET", endpoint=endpoint)
 
-        elif action == "restore":
+        elif action == ActionsCommands.RESTORE_ACTION:
             key = args[0]
             endpoint = f"actions/cache/{key}/restore"
             return self._make_request(method="POST", endpoint=endpoint)
@@ -26,8 +29,8 @@ class ActionsCommands(GitHubClient):
         else:
             raise ValueError(f"Unsupported action: {action}")
 
-    def run(self, action: str, *args: Optional[Any]) -> Any:
-        if action == "list":
+    def run(self, action: str) -> Any:
+        if action == ActionsCommands.LIST_ACTION:
             endpoint = "actions/runs"
             return self._make_request(method="GET", endpoint=endpoint)
         else:
@@ -38,10 +41,9 @@ class ActionsCommands(GitHubClient):
         endpoint = "actions/artifacts"
         payload = {}
 
-        # Using inherited _make_request method
         try:
             response = self._make_request(method="GET", endpoint=endpoint, payload=payload)
-            artifacts = response.get('artifacts', [])
+            artifacts = response.json().get('artifacts', [])
             if not artifacts:
                 no_artifacts = f"No artifacts found for repository {self.repo}"
                 return no_artifacts
@@ -51,35 +53,50 @@ class ActionsCommands(GitHubClient):
             print(f"Failed to get artifacts for repository {self.repo}: {error}")
             raise
 
-    # List out all artifacts with name, uploaded date, and file type
-    def list_artifacts(self):
+    # List out all artifacts with name, uploaded date, file type and id
+    def list_artifacts(self) -> list:
         artifacts = self.get_artifacts()
+        artifact_list = []
+
         for artifact in artifacts:
-            print(f"Artifact name: {artifact['name']}")
-            print(f"Created date: {artifact['created_at']}")
-            print(f"Location: {artifact['archive_download_url']}")
+            artifact_info = {
+                "Artifact name": artifact.get('name'),
+                "Created date": artifact.get('created_at'),
+                "Location": artifact.get('archive_download_url'),
+                "Artifact ID": artifact.get('id')
+            }
+            artifact_list.append(artifact_info)
+
+        print("ARTIFACT INFO:")
+        for artifact_info in artifact_list:
+            for key, value in artifact_info.items():
+                print(f"{key}: {value}")
+            print("=============================")
+
+        return artifact_list
 
     def get_all_workflow_runs(self):
         runs = []
-        try:
-            url = "/actions/runs"
-            while url:
-                response = self._make_request(method="GET", endpoint=url)
-                runs.extend(response.get('workflow_runs', []))
-                url = response.links.get('next', {}).get('url', None)
-            return runs
-        except Exception as error:
-            print(f"Error retrieving workflow runs: {error}")
-            return []
+        url = "actions/runs"
+        while url:
+            response = self._make_request(method="GET", endpoint=url)
+            runs.extend(response.json().get('workflow_runs', []))
+            url = response.json().get('next_page', None)
+        return runs
 
     def delete_workflow_run(self, run_id):
         try:
-            url = f"{self.base_url}/actions/runs/{run_id}"
-            response = requests.delete(url, headers=self.headers)
-            response.raise_for_status()
-            print(f"Successfully deleted run ID {run_id}")
-        except requests.exceptions.HTTPError as err:
-            print(f"Error deleting workflow run {run_id}: {err}")
+            endpoint = f"actions/runs/{run_id}"
+            response = self._make_request(method="DELETE", endpoint=endpoint)
+
+            if response.status_code == 204:
+                return f"Deleted successfully: run ID {run_id}"
+            else:
+                return f"Failed to delete run ID {run_id}. HTTP Status Code: {response.status_code}"
+        except Exception as error:
+            # Log the unexpected error and return a descriptive error message
+            print(f"Unexpected Error deleting workflow run {run_id}: {error}")
+            return f"Unexpected Error: {error}"
 
     def delete_all_workflow_runs(self):
         all_runs = self.get_all_workflow_runs()
